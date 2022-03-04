@@ -7,7 +7,11 @@ import classificacao_script
 import intermed
 import tratament_preliminar
 
+
 # teste 123v
+
+
+
 a = cv.imread('a.png')
 b = cv.imread('b.png')
 cr = cv.imread('c.png')
