@@ -30,15 +30,15 @@ def classifica(fframe,color):
         tipo = 'C'
 
 
-
     # Gerando gráficos
+    #OBS: deve apenas criar imagens .png (verificar o custo computacional de atualizar a cada nova capa?)
 
     plt.scatter(stats[:,3],stats[:,2])
     plt.xlabel('Altura do nó')
     plt.ylabel('Largura do nó')
     plt.title('Dispersão da dimensão dos nós')
     plt.savefig('scatter.png')
-    scatter =cv.imread('scatter.png')
+    scatter = cv.imread('scatter.png')        # Retirar (não há necessidade)
     plt.close()
 
 
@@ -47,18 +47,18 @@ def classifica(fframe,color):
     plt.ylabel('Frequência')
     plt.title('Dispersão da dimensão dos nós')
     plt.savefig('hist.png')
-    hist = cv.imread('hist.png')
-
+    hist = cv.imread('hist.png')              # Retirar (não há necessidade)
 
 
 
     for rows in stats:
-        color = cv.rectangle(color, (rows[0], rows[1]), (rows[0] + rows[2], rows[1] + rows[3]), (255, 0, 0), 2)
+        color = cv.rectangle(color, (rows[0], rows[1]), (rows[0] + rows[2], rows[1] + rows[3]), (255, 0, 0), 2)         # Precisa Salvar imagem em .png
+        print(type(color))
 
 
-    return nnos,tipo,color,scatter,hist
 
-
+    return nnos,tipo,color,scatter,hist           #Substituir, não precisando retornar as imagens. (talvez retornar o diretório delas)
+    # return nnos,tipo
 
 
 
