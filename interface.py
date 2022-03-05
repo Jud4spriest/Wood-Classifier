@@ -4,10 +4,13 @@ Created on Sun Feb 27 14:35:34 2022
 @author: Marcos Azevedo (judaspriest)
 """
 
-# ------------------- Setup --------------------
+"""------------------- Setup -------------------- """
 import io
 import os
+import time
+
 import PySimpleGUI as sg
+from threading import Thread
 from PIL import Image
 
 sg.theme('DarkTanBlue')
@@ -15,7 +18,52 @@ sg.theme('DarkTanBlue')
 # file_types = [("JPEG (*.jpg)", "*.jpg"),
 #               ("All files (*.*)", "*.*")]
 
-# ------------------- Variaveis Globais --------------------
+
+
+"""-------------------- Classes ------------------- """
+class Processo(Thread):
+    def __init__(self, target, args,name='Processo'):
+        super().__init__()
+        self.name = name
+        self._target = target
+        self.args = args
+        self.daemon = True
+        self._stoped = False
+        self.event = ''
+        self.values = ''
+        print(self.name, 'começou')
+
+    def run(self):
+        while True:
+            self.event,self.values = self._target(self.args)
+            print('evento')
+            # if self.event:
+            #     self._stoped = True
+            #     break
+
+    def retorna(self):
+        event = self.event
+        val = self.values
+        if self.event != '':
+            self.clear()
+        return event, val
+
+    def clear(self):
+        self.event = ''
+        self.values = ''
+
+    def join(self):
+        pass
+
+
+# def timer():
+#     start = time.time()
+#
+
+def thread_leitura(window):
+    return window.read()
+
+""" ------------------- Variaveis Globais -------------------- """
 font = ("Arial, 11")
 SIZE_FRAME_X = 600
 SIZE_FRAME_Y = 200
@@ -23,7 +71,7 @@ folder = ''
 a = b = c = 0                           # Variaveis que receberão os dados da identificação
 total = a+b+c                           # Função a trabalhar.
 
-# ------------------- Funções --------------------
+""" ------------------- Funções -------------------- """
 def createColumn(elements,x,y):
     col = sg.Column(
         [[sg.Frame('', [[sg.Column(elements,expand_x=True,element_justification='center',justification='center', pad=(0, 0))]],size=(x, y),border_width=1,font=font)]])
@@ -36,7 +84,7 @@ def openImage(img,x,y):
     image.save(bio, format="PNG")
     return bio.getvalue()
 
-# ------------------- Janelas do programa ------------------
+""" ------------------- Janelas do programa ------------------ """
 def setup_window():
     global folder
     firstime = False
@@ -91,7 +139,7 @@ def main_window():
     # col4 = createColumn([[sg.Image(key="-IMAGE2-")]], x, y)
     # col5 = createColumn([[sg.Image(key="-IMAGE3-")]], x, y)
     # col6 = createColumn([[sg.Image(key="-IMAGE4-")]], x, y)
-    col7 = sg.Column([[sg.Button("Iniciar",s=(10,1),disabled=False),sg.Button("Parar",s=(10,1),disabled=True)]],element_justification='center',justification='center')
+    col7 = sg.Column([[sg.Button("Iniciar",s=(10,1),disabled=False),sg.Button("Parar",s=(10,1),disabled=True),sg.Text('Tempo de execução: 0.0s',k='-TIME-',expand_x=True,justification='right')]],element_justification='center',justification='center')
 
     # ----- layout -----
     layout = [[col1, col2],
@@ -107,8 +155,16 @@ def main_window():
     main_window = sg.Window(title="Classificador de Madeira", layout=layout, grab_anywhere=True) # margins=(200, 100), resizable=True
 
     # ----- event loop -----
+
+    p = Processo(target=thread_leitura, args=main_window)
+    p.start()
+    startTimer = 0
     while True:
-        event, values = main_window.read()
+        event, values = p.retorna()
+        # event, values = main_window.read()
+        # print(event)
+        # print(values)
+        # event, values = main_window.read()
         if event == "Exit" or event == sg.WIN_CLOSED:
             break
         elif event == "Configurações":
@@ -116,14 +172,19 @@ def main_window():
         elif event == "Iniciar":                                     # Gatilho para iniciar a identificação em tempo real
             main_window['Iniciar'].update(disabled=True)
             main_window['Parar'].update(disabled=False)
+            startTimer = time.time()
+            main_window["-TIME-"].update('Tempo de execução: ' + str(round(t, 3)))
+            main_window.refresh()
         elif event == "Parar":                                       # Gatilho para parar a identificação.
             main_window['Iniciar'].update(disabled=False)
             main_window['Parar'].update(disabled=True)
+        t = time.time() - startTimer
+        # print(t)
 
 
-
-        elif event == "Load Image":
-            filename = values["-FILE-"]
+        #
+        # elif event == "Load Image":
+        #     filename = values["-FILE-"]
             # if os.path.exists(filename):
             #     # window["-IMAGE-"].update(filename=filename)
             #     main_window["-IMAGE-"].update(data=openImage(filename,size_frame_x,size_frame_y))
@@ -132,7 +193,8 @@ def main_window():
             #     main_window["-IMAGE4-"].update(data=openImage(filename,size_frame_x,size_frame_y))
     main_window.close()
 
-# ------------------ void main ---------------------------
+
+""" ------------------ void main ------------------- """
 if __name__ == "__main__":
     # setup_window()
     main_window()
