@@ -14,17 +14,58 @@ import PySimpleGUI as sg
 from threading import Thread
 from PIL import Image
 
+import teste_integracao_interface
+
 sg.theme('DarkTanBlue')
 
 # file_types = [("JPEG (*.jpg)", "*.jpg"),
 #               ("All files (*.*)", "*.*")]
 
+""" ------------------- Variaveis Globais -------------------- """
+font = ("Arial, 11")
+SIZE_FRAME_X = 600
+SIZE_FRAME_Y = 200
+folder = ''
+a = b = c = 0                           # Variaveis que receberão os dados da identificação
+total = a+b+c                           # Função a trabalhar.
 
-#g
+scatter = ''                            # path do scatter
+hist = ''                               # path do hist
+
+def thread_identif():
+    return teste_integracao_interface.testeIntegracao()
+
 """-------------------- Classes ------------------- """
 
+class Identificacao(Thread):
+    def __init__(self, target,name='IdentThread'):
+        super().__init__()
+        self.name = name
+        self._target = target
+        self.daemon = True
+        self._stoped = False
+        self.flag = True
+        self.nos = 0
+        self.classe = ''
+        print(self.name, 'começou')
+
+    def run(self):
+        while self.flag:
+            self.nos, self.classe = self._target
+
+        self._stoped = True
+
+    def stop(self):
+        self.flag = False
+
+    def extract(self):
+        return self.nos, self.classe
+
+    def join(self):
+        pass
+
 class Cronometro(Thread):
-    def __init__(self, target, window, value,name='Processo'):
+    def __init__(self, target, window, value,name='CronoThread'):
         super().__init__()
         self.name = name
         self._target = target
@@ -40,10 +81,10 @@ class Cronometro(Thread):
         startTime = time.time()
         while self.flag:
             self.time = time.time() - startTime
-            print(self.time)
+            # print(self.time)
             self.window[self.value].update('Tempo de execução: ' + str(round(self.time, 2))+' seg')
             self._target(self.window)
-
+            time.sleep(0.01)
         self._stoped = True
 
     def stop(self):
@@ -54,14 +95,6 @@ class Cronometro(Thread):
 
     def join(self):
         pass
-
-""" ------------------- Variaveis Globais -------------------- """
-font = ("Arial, 11")
-SIZE_FRAME_X = 600
-SIZE_FRAME_Y = 200
-folder = ''
-a = b = c = 0                           # Variaveis que receberão os dados da identificação
-total = a+b+c                           # Função a trabalhar.
 
 """ ------------------- Funções -------------------- """
 def createColumn(elements,x,y):
@@ -135,7 +168,7 @@ def main_window():
     # col5 = createColumn([[sg.Image(key="-IMAGE3-")]], x, y)
     # col6 = createColumn([[sg.Image(key="-IMAGE4-")]], x, y)
     col7 = sg.Column([[sg.Button("Iniciar",s=(10,1),disabled=False),sg.Button("Parar",s=(10,1),disabled=True)]],element_justification='center',justification='center')
-    col8 = sg.Column([[sg.Text('Tempo de execução: 0.00 seg',k='-TIME-',expand_x=True,justification='right')]])
+    col8 = sg.Column([[sg.Push(),sg.Text('Tempo de execução: 0.00 seg',k='-TIME-',expand_x=True,justification='right')]])
     # ----- layout -----
     layout = [[col1, col2],
               [col3, col4],
@@ -161,12 +194,16 @@ def main_window():
         elif event == "Iniciar":                                     # Gatilho para iniciar a identificação em tempo real
             main_window['Iniciar'].update(disabled=True)
             main_window['Parar'].update(disabled=False)
-            p = Cronometro(target=thread_timer, window=main_window, value='-TIME-')
-            p.start()
+            crono = Cronometro(target=thread_timer, window=main_window, value='-TIME-')
+            ident = Identificacao(target=thread_identif)
+            ident.start()
+            crono.start()
         elif event == "Parar":                                       # Gatilho para parar a identificação.
             main_window['Iniciar'].update(disabled=False)
             main_window['Parar'].update(disabled=True)
-            p.stop()
+            main_window.write_event_value()
+            ident.stop()
+            crono.stop()
 
 
         #

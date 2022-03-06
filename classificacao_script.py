@@ -31,7 +31,7 @@ def classifica(fframe,color):
 
 
     # Gerando gráficos
-    #OBS: deve apenas criar imagens .png (verificar o custo computacional de atualizar a cada nova capa?)
+    """OBS: deve apenas criar imagens .png (verificar o custo computacional de atualizar a cada nova capa?)"""
 
     plt.scatter(stats[:,3],stats[:,2])
     plt.xlabel('Altura do nó')
@@ -56,9 +56,11 @@ def classifica(fframe,color):
         print(type(color))
 
 
+    """Retorno Antigo"""
+    # return nnos,tipo,color,scatter,hist           #Substituir, não precisando retornar as imagens. (talvez retornar o diretório delas)
 
-    return nnos,tipo,color,scatter,hist           #Substituir, não precisando retornar as imagens. (talvez retornar o diretório delas)
-    # return nnos,tipo
+    """Retorno Novo"""
+    return nnos,tipo
 
 
 

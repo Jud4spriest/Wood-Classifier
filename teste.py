@@ -8,7 +8,6 @@ import intermed
 import tratament_preliminar
 
 
-# teste 123v
 
 
 
