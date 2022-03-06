@@ -3,6 +3,7 @@
 Created on Sun Feb 27 14:35:34 2022
 @author: Marcos Azevedo (judaspriest)
 """
+import threading
 
 """------------------- Setup -------------------- """
 import io
@@ -21,47 +22,38 @@ sg.theme('DarkTanBlue')
 
 
 """-------------------- Classes ------------------- """
-class Processo(Thread):
-    def __init__(self, target, args,name='Processo'):
+
+class Cronometro(Thread):
+    def __init__(self, target, window, value,name='Processo'):
         super().__init__()
         self.name = name
         self._target = target
-        self.args = args
+        self.window = window
+        self.value = value
         self.daemon = True
         self._stoped = False
-        self.event = ''
-        self.values = ''
+        self.time = 0
+        self.flag = True
         print(self.name, 'começou')
 
     def run(self):
-        while True:
-            self.event,self.values = self._target(self.args)
-            print('evento')
-            # if self.event:
-            #     self._stoped = True
-            #     break
+        startTime = time.time()
+        while self.flag:
+            self.time = time.time() - startTime
+            print(self.time)
+            self.window[self.value].update('Tempo de execução: ' + str(round(self.time, 2))+' seg')
+            self._target(self.window)
 
-    def retorna(self):
-        event = self.event
-        val = self.values
-        if self.event != '':
-            self.clear()
-        return event, val
+        self._stoped = True
 
-    def clear(self):
-        self.event = ''
-        self.values = ''
+    def stop(self):
+        self.flag = False
+
+    def timer(self):
+        return self.time
 
     def join(self):
         pass
-
-
-# def timer():
-#     start = time.time()
-#
-
-def thread_leitura(window):
-    return window.read()
 
 """ ------------------- Variaveis Globais -------------------- """
 font = ("Arial, 11")
@@ -84,6 +76,9 @@ def openImage(img,x,y):
     image.save(bio, format="PNG")
     return bio.getvalue()
 
+def thread_timer(window):
+    window.refresh()
+    time.sleep(0.01)
 """ ------------------- Janelas do programa ------------------ """
 def setup_window():
     global folder
@@ -139,12 +134,12 @@ def main_window():
     # col4 = createColumn([[sg.Image(key="-IMAGE2-")]], x, y)
     # col5 = createColumn([[sg.Image(key="-IMAGE3-")]], x, y)
     # col6 = createColumn([[sg.Image(key="-IMAGE4-")]], x, y)
-    col7 = sg.Column([[sg.Button("Iniciar",s=(10,1),disabled=False),sg.Button("Parar",s=(10,1),disabled=True),sg.Text('Tempo de execução: 0.0s',k='-TIME-',expand_x=True,justification='right')]],element_justification='center',justification='center')
-
+    col7 = sg.Column([[sg.Button("Iniciar",s=(10,1),disabled=False),sg.Button("Parar",s=(10,1),disabled=True)]],element_justification='center',justification='center')
+    col8 = sg.Column([[sg.Text('Tempo de execução: 0.00 seg',k='-TIME-',expand_x=True,justification='right')]])
     # ----- layout -----
     layout = [[col1, col2],
               [col3, col4],
-              [col7]]
+              [col7, col8]]
     #
     # layout_old = [[col1, col2],
     #           [col3, col4],
@@ -155,31 +150,23 @@ def main_window():
     main_window = sg.Window(title="Classificador de Madeira", layout=layout, grab_anywhere=True) # margins=(200, 100), resizable=True
 
     # ----- event loop -----
-
-    p = Processo(target=thread_leitura, args=main_window)
-    p.start()
-    startTimer = 0
     while True:
-        event, values = p.retorna()
-        # event, values = main_window.read()
-        # print(event)
-        # print(values)
-        # event, values = main_window.read()
+        event, values = main_window.read()
         if event == "Exit" or event == sg.WIN_CLOSED:
             break
         elif event == "Configurações":
+            # setup_window_thread = threading.Thread(target=setup_window,daemon=True)
+            # setup_window_thread.start()
             setup_window()
         elif event == "Iniciar":                                     # Gatilho para iniciar a identificação em tempo real
             main_window['Iniciar'].update(disabled=True)
             main_window['Parar'].update(disabled=False)
-            startTimer = time.time()
-            main_window["-TIME-"].update('Tempo de execução: ' + str(round(t, 3)))
-            main_window.refresh()
+            p = Cronometro(target=thread_timer, window=main_window, value='-TIME-')
+            p.start()
         elif event == "Parar":                                       # Gatilho para parar a identificação.
             main_window['Iniciar'].update(disabled=False)
             main_window['Parar'].update(disabled=True)
-        t = time.time() - startTimer
-        # print(t)
+            p.stop()
 
 
         #
