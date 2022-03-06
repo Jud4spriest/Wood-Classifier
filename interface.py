@@ -29,16 +29,14 @@ folder = ''
 a = b = c = 0                           # Variaveis que receberão os dados da identificação
 total = a+b+c                           # Função a trabalhar.
 
-scatter = ''                            # path do scatter
-hist = ''                               # path do hist
-
-def thread_identif():
-    return teste_integracao_interface.testeIntegracao()
+scatter = 'scatter.png'                            # path do scatter
+hist = 'hist.png'                               # path do hist
+imagens={'-IMAGE-':scatter,'-IMAGE2-':hist}
 
 """-------------------- Classes ------------------- """
 
 class Identificacao(Thread):
-    def __init__(self, target,name='IdentThread'):
+    def __init__(self, target, value, intervalo, name='IdentThread'):
         super().__init__()
         self.name = name
         self._target = target
@@ -47,13 +45,25 @@ class Identificacao(Thread):
         self.flag = True
         self.nos = 0
         self.classe = ''
+        self.intervalo = intervalo
+        self.value = value
         print(self.name, 'começou')
 
     def run(self):
         while self.flag:
-            self.nos, self.classe = self._target
-
+            self.nos, self.classe = self._target()
+            self.exibe()
+            time.sleep(self.intervalo)
         self._stoped = True
+
+    def exibe(self):
+        for val in self.value:
+            try:
+                filename = os.path.join(folder, imagens[val])
+                self.window[val].update(filename=filename)
+                self.window.refresh()
+            except:
+                pass
 
     def stop(self):
         self.flag = False
@@ -62,7 +72,12 @@ class Identificacao(Thread):
         return self.nos, self.classe
 
     def join(self):
+        self.flag = False
         pass
+
+def thread_identif():
+    return teste_integracao_interface.testeIntegracao()
+
 
 class Cronometro(Thread):
     def __init__(self, target, window, value,name='CronoThread'):
@@ -81,11 +96,13 @@ class Cronometro(Thread):
         startTime = time.time()
         while self.flag:
             self.time = time.time() - startTime
-            # print(self.time)
-            self.window[self.value].update('Tempo de execução: ' + str(round(self.time, 2))+' seg')
-            self._target(self.window)
+            self.exibe()
             time.sleep(0.01)
         self._stoped = True
+
+    def exibe(self):
+        self.window[self.value].update('Tempo de execução: ' + str(round(self.time, 2)) + ' seg')
+        self._target(self.window)
 
     def stop(self):
         self.flag = False
@@ -94,6 +111,7 @@ class Cronometro(Thread):
         return self.time
 
     def join(self):
+        self.flag = False
         pass
 
 """ ------------------- Funções -------------------- """
@@ -180,7 +198,7 @@ def main_window():
     #           [col7]]
 
     # ----- window -----
-    main_window = sg.Window(title="Classificador de Madeira", layout=layout, grab_anywhere=True) # margins=(200, 100), resizable=True
+    main_window = sg.Window(title="Classificador de Madeira",finalize=True, layout=layout, grab_anywhere=True) # margins=(200, 100), resizable=True
 
     # ----- event loop -----
     while True:
@@ -195,15 +213,15 @@ def main_window():
             main_window['Iniciar'].update(disabled=True)
             main_window['Parar'].update(disabled=False)
             crono = Cronometro(target=thread_timer, window=main_window, value='-TIME-')
-            ident = Identificacao(target=thread_identif)
+            ident = Identificacao(target=thread_identif,value=['-IMAGE-','-IMAGE2'],intervalo=1)
             ident.start()
             crono.start()
         elif event == "Parar":                                       # Gatilho para parar a identificação.
             main_window['Iniciar'].update(disabled=False)
             main_window['Parar'].update(disabled=True)
             main_window.write_event_value()
-            ident.stop()
-            crono.stop()
+            ident.join()
+            crono.join()
 
 
         #

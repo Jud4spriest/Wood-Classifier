@@ -53,7 +53,7 @@ def classifica(fframe,color):
 
     for rows in stats:
         color = cv.rectangle(color, (rows[0], rows[1]), (rows[0] + rows[2], rows[1] + rows[3]), (255, 0, 0), 2)         # Precisa Salvar imagem em .png
-        print(type(color))
+        # print(type(color))
 
 
     """Retorno Antigo"""
