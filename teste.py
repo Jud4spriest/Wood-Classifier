@@ -12,7 +12,7 @@ list = []
 for i in range(3):
     list.append(cv.imread(images[i]))
 
-del(list[0])
+del(list[0])        #Retira a capa tipo A por causa do bug
 
 for i in list:
     [numero_de_nos,tipo_norma,colorida_bounding_box,pb,g_scatter,g_hist] = intermed.intermediario(i,0,0,len(i),len(i[1]))

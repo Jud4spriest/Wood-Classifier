@@ -3,6 +3,7 @@
 Created on Sun Feb 27 14:35:34 2022
 @author: Marcos Azevedo (judaspriest)
 """
+import errno
 import threading
 
 """------------------- Setup -------------------- """
@@ -13,7 +14,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, FigureCanvasAgg
 from matplotlib.figure import Figure
 from random import randint
 import PySimpleGUI as sg
-from threading import Thread
+from threading import Thread,Event
 from PIL import Image, ImageTk
 
 import teste_integracao_interface
@@ -24,62 +25,67 @@ sg.theme('DarkTanBlue')
 #               ("All files (*.*)", "*.*")]
 
 """ ------------------- Variaveis Globais -------------------- """
-font = ("Arial, 11")
+font = ("Any, 11")
 SIZE_FRAME_X = 600
 SIZE_FRAME_Y = 200
 folder = ''
-a = b = c = 0                           # Variaveis que receberão os dados da identificação
-total = a+b+c                           # Função a trabalhar.
 
 scatter = 'scatter.png'                            # path do scatter
 hist = 'hist.png'
 color = 'color.png'
 pb = 'pb.png'
 
+list = ['b.png','c.png']
+
 """-------------------- Classes ------------------- """
 #
-# class Identificacao(Thread):
-#     def __init__(self, target, value, intervalo, name='IdentThread'):
-#         super().__init__()
-#         self.name = name
-#         self._target = target
-#         self.daemon = True
-#         self._stoped = False
-#         self.flag = True
-#         self.nos = 0
-#         self.classe = ''
-#         self.intervalo = intervalo
-#         self.value = value
-#         print(self.name, 'começou')
-#
-#     def run(self):
-#         while self.flag:
-#             self.nos, self.classe = self._target()
-#             self.exibe()
-#             time.sleep(self.intervalo)
-#         self._stoped = True
-#
-#     def exibe(self):
-#         for val in self.value:
-#             try:
-#                 filename = os.path.join(folder, imagens[val])
-#                 self.window[val].update(filename=filename)
-#                 self.window.refresh()
-#             except:
-#                 pass
-#
-#     def stop(self):
-#         self.flag = False
-#
-#     def extract(self):
-#         return self.nos, self.classe
-#
-#     def join(self):
-#         self.flag = False
-#         pass
-#
-# def thread_identif():
-#     return teste_integracao_interface.testeIntegracao()
+class Identificacao(Thread):
+    def __init__(self, target, intervalo, name='Thread_identificacao'):
+        super().__init__()
+        self.name = name
+        self._target = target
+        self._finished = Event()
+        self.daemon = True
+        # self._stoped = False
+        """Custom Atributos"""
+        # self.flag = True
+        self._nos = 0
+        self._classe = ''
+        # self.results = []
+        self._intervalo = intervalo
+        self._count = 0
+        print(self.name, 'criada')
+
+    def run(self):
+        # while self.flag:
+        print(self.name, 'iniciada')
+        while not self._finished.is_set():
+            # if self._finished.is_set(): return
+            self._nos, self._classe,_,_,_,_ = self._target(list[self._count])          #Criar uma variavel só (results) #Teoricamente eu garanto que há dados para identificar.
+            self._count += 1
+            time.sleep(self._intervalo)
+        # self._stoped = True
+        print(self.name, 'destruida')
+
+    def shutdown(self):
+        # self.flag = False
+        self._finished.set()
+        print(self.name, 'Desativada')
+
+    def contagemDados(self):
+        return self._count
+
+    def retornaDados(self):
+        # return self.results
+        return self._nos, self._classe
+
+    def join(self):
+        # self.flag = False
+        pass
+
+def thread_identif(img):
+    return teste_integracao_interface.testeIntegracao(img)         #Aqui vai a função de identificação (setado como teste)
+    # return main_function_identification
 
 
 # class Cronometro(Thread):
@@ -117,6 +123,10 @@ pb = 'pb.png'
 #         self.flag = False
 #         pass
 """ ------------------- Funções -------------------- """
+def verificaStatusThread(t):
+    if t.is_alive():
+        print('status thread:', t.is_alive())
+
 def createColumn(elements,x,y):
     col = sg.Column(
         [[sg.Frame('', [[sg.Column(elements,expand_x=True,element_justification='center',justification='center', pad=(0, 0))]],size=(x, y),border_width=1,font=font)]])
@@ -142,21 +152,26 @@ def draw_figure(canvas, figure, loc=(0, 0)):
 def redimensionar(filename,size):
     if os.path.isfile(filename):
         im = Image.open(filename)
-        im = im.resize(size, resample=Image.BICUBIC)
-        return ImageTk.PhotoImage(image=im)
-    return
+    else:
+        pass
+        # print("erro")
+        # raise FileNotFoundError("Arquivo não encontrado! Certifique-se de configurar a pasta correta")
+        # raise "erro"
+    im = im.resize(size, resample=Image.BICUBIC)
+    return ImageTk.PhotoImage(image=im)
+
 
 """ ------------------- Janelas do programa ------------------ """
 def setup_window():
     global folder
     firstime = False
 
-    coluna_layout = [   
+    coluna_layout = [
         [sg.Text("Escolha um diretório para leitura das imagens:")],
         [sg.Text("Diretório:"),sg.In(size=(25, 1), enable_events=True, key="-FOLDER-"), sg.FolderBrowse()],
         [sg.Button('Ok',s=(5,1),disabled=True)]
         ]
-    
+
     layout = [[sg.Column(coluna_layout, element_justification='center')]]
     setup_window = sg.Window('Classificador de Madeira', layout, keep_on_top=True, finalize=True, grab_anywhere=True)
 
@@ -180,22 +195,22 @@ def setup_window():
 def main_window():
 
     # ----- variaveis -----
+    a, b, c = 0, 0, 0
     x = SIZE_FRAME_X
     y = SIZE_FRAME_Y
-    nnos = 0                 # (Variáveis a receber da identificação)
-    classe = 'Nenhum'        # (Variáveis a receber da identificação)
     elem_key = ['-IMAGE1-','-IMAGE2-','-IMAGE3-','-IMAGE4-']
     imagens = {elem_key[0]: pb, elem_key[1]: scatter, elem_key[2]: color, elem_key[3]: hist}
+    periodo_amostragem = 3
 
     # ----- frames -----
-    col1 = createColumn([[sg.Text('Capa Atual',expand_x=True,background_color='#005e80',justification='c',)],
-                         [sg.Column([[sg.Column([[sg.Text("Número de Nós: "+str(nnos))]]), sg.Column([[sg.Text("Classe: "+classe)]])]],expand_x=True,element_justification='center')],
+    col1 = createColumn([[sg.Text('Capa Atual',expand_x=True,background_color='#005e80',justification='c')],
+                         [sg.Column([[sg.Column([[sg.Text("Número de Nós: 0",k='-NOS-')]]), sg.Column([[sg.Text("Classe: Nenhum",k='-CLASSE-')]])]],expand_x=True,element_justification='center')],
                          [sg.Text('Estatísticas Gerais',expand_x=True,background_color='#005e80',justification='c',)],
 
-                         [sg.Column([[sg.Column([[sg.Text("Tipo A: "+str(a))]]),
-                                      sg.Column([[sg.Text("Tipo B: "+str(b))]]),
-                                      sg.Column([[sg.Text("Tipo C: "+str(c))]])]],expand_x=True,element_justification='center')],
-                         [sg.Text("Total de Capas: " + str(total))],
+                         [sg.Column([[sg.Column([[sg.Text("Tipo A: 0",k='-A-')]]),
+                                      sg.Column([[sg.Text("Tipo B: 0",k='-B-')]]),
+                                      sg.Column([[sg.Text("Tipo C: 0",k='-C-')]])]],expand_x=True,element_justification='center')],
+                         [sg.Text("Total de Capas: 0", k='-TOTAL-')],
                          [sg.Button('Configurações')]], x, y)
     col2 = createColumn([[sg.Image(key=elem_key[0])]], x, y)
     col3 = createColumn([[sg.Image(key=elem_key[1])]], x, y*2)
@@ -223,38 +238,72 @@ def main_window():
     start = main_window['Iniciar']
     stop = main_window['Parar']
     crono = main_window['-TIME-']
+    widnos = main_window['-NOS-']
+    widclass = main_window['-CLASSE-']
 
     # ----- event loop -----
     startTime = 0
+    atual = 0
+    identify = Thread()
+
     while True:
+        # verificaStatusThread(identify)
         event, values = main_window.read(timeout=10)
+
         if event == "Exit" or event == sg.WIN_CLOSED:
             break
+
         elif event == "Configurações":
             setup_window()
+
         elif event == "Iniciar":                                     # Gatilho para iniciar a identificação em tempo real
             start.update(disabled=True)
             stop.update(disabled=False)
+            identify = Identificacao(target=thread_identif, intervalo=periodo_amostragem)
+            identify.start()
             startTime = time.time()
 
         elif event == "Parar":                                       # Gatilho para parar a identificação.
             start.update(disabled=False)
             stop.update(disabled=True)
+            identify.shutdown()
             startTime = 0
+            atual = 0
 
         if startTime != 0:
             t = cronometro(startTime)
             crono.update('Tempo de execução: ' + str(round(t, 2)) + ' seg')
+            anterior = atual
+            atual = identify.contagemDados()
+            if anterior != atual:
+                nnos, classe = identify.retornaDados()
+                widnos.update('Número de Nós: ' + str(nnos))
+                widclass.update("Classe: " + classe)
 
-            for i in elem_key:
-                if i == '-IMAGE2-': size = (x,y*2)
-                else: size=x,y
-                try:
-                    filename = os.path.join(folder,imagens[i])
-                    image = redimensionar(filename,size)
-                    main_window[i].update(data=image)
-                except:
-                    raise FileNotFoundError("Arquivo não encontrado! Certifique-se de configurar a pasta correta")
+                if classe == "A":
+                    a += 1
+                    main_window['-A-'].update("Tipo A: " + str(a))
+                elif classe == "B":
+                    b += 1
+                    main_window['-B-'].update("Tipo B: " + str(b))
+                elif classe == "C":
+                    c += 1
+                    main_window['-C-'].update("Tipo C: " + str(c))
+                else:
+                    pass  # Raise error#
+
+                main_window['-TOTAL-'].update("Total de Capas: " + str(atual))
+
+                for i in elem_key:
+                    if i == '-IMAGE2-': size = (x,y*2)
+                    else: size = (x,y)
+                    try:
+                        filename = os.path.join(folder,imagens[i])
+                        image = redimensionar(filename,size)
+                        main_window[i].update(data=image)
+                    except:
+                        pass
+                main_window.refresh()
 
     main_window.close()
 

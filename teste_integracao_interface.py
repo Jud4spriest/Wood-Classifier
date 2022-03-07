@@ -7,10 +7,11 @@ import classificacao_script
 import intermed
 import tratament_preliminar
 
-def testeIntegracao():
+def testeIntegracao(img):
 
-    a = cv.imread('a.png')
-    b = cv.imread('b.png')
-    cr = cv.imread('c.png')
+    a = cv.imread(img)
+    # b = cv.imread('b.png')
+    # cr = cv.imread('c.png')
 
-    return intermed.intermediario(cr,0,0,len(cr),len(cr[1]))
+    return intermed.intermediario(a,0,0,len(a),len(a[1]))
+
