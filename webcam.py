@@ -1,12 +1,7 @@
 import cv2 as cv
 
-def chama_webcam(n_webcam):
-    #normalmente é 1 ou 2, 0 é o nativo do not
-    webcam = cv.VideoCapture(n_webcam)
+def chamaWebcam(n_webcam):
+    webcam = cv.VideoCapture(n_webcam)     #normalmente é 1 ou 2, 0 é o nativo do not
     if webcam.isOpened():
-
-        validacao, frame = webcam.read(n_webcam)
-        cv.imshow('teste',frame)
-        cv.waitKey(3)
-
+        _, frame = webcam.read(n_webcam)
         return frame

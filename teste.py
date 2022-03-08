@@ -1,18 +1,14 @@
 import cv2 as cv
-import numpy as np
-import time
-import keyboard
-
-import classificacao_script
 import intermed
-import tratament_preliminar
 
-images = ['b.png','c.png']
+
+dir = 'database/'
+images = ['a.png','b.png','c.png']
 list = []
-for i in range(2):
-    list.append(cv.imread(images[i]))
+for i in range(3):
+    list.append(cv.imread(dir+images[i]))
 
-#del(list[0])        #Retira a capa tipo A por causa do bug
+del(list[0])        #Retira a capa tipo  A por causa do bug
 
 for i in list:
     [numero_de_nos,tipo_norma,colorida_bounding_box,pb,g_scatter,g_hist] = intermed.intermediario(i,0,0,len(i),len(i[1]))
