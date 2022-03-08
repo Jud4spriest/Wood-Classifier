@@ -12,6 +12,10 @@ import PySimpleGUI as sg
 from threading import Thread,Event
 from PIL import Image, ImageTk
 import teste_integracao_interface
+import intermed
+import webcam
+import cv2 as cv
+
 
 sg.theme('DarkTanBlue')
 
@@ -50,7 +54,7 @@ class Identificacao(Thread):
             if len(self._database) != 0:
                 self.results = self._target(folder+self._database[self._count])   # Função que roda com database
             else:
-                # self.results = self._target()                                   # DESCOMENTAR P/ IMPLEMENTAR APLICAÇÃO EM TEMPO REAL
+                self.results = self._target(imagem_webcam())                                   # DESCOMENTAR P/ IMPLEMENTAR APLICAÇÃO EM TEMPO REAL
                 pass
             print("Elapsed Time função identificação: "+str(cronometro(st,4)))    # Código de logging
             self._count += 1
@@ -70,6 +74,11 @@ class Identificacao(Thread):
         return nos, classe
 
 """ ------------------- Funções -------------------- """
+def imagem_webcam():
+    return webcam.chama_webcam(0)
+
+
+
 def getDatabase(folder):
     try:
         file_list = os.listdir(folder)
@@ -84,9 +93,18 @@ def getDatabase(folder):
     ]
     return fnames
 
+# def thread_identif(img):
+#     return teste_integracao_interface.testeIntegracao(img)
+#
+#     # (TESTE)
+#     # return main_function_identification                           # COLOCAR AQUI A FUNÇÂO DE IDENTIFICAÇÂO EM TEMPO REAL
+
+
+
 def thread_identif(img):
-    return teste_integracao_interface.testeIntegracao(img)          # (TESTE)
-    # return main_function_identification                           # COLOCAR AQUI A FUNÇÂO DE IDENTIFICAÇÂO EM TEMPO REAL
+    return teste_integracao_interface.testeIntegracao(img)
+
+
 
 def verificaStatusThread(t):
     if t.is_alive():
@@ -171,7 +189,7 @@ def main_window():
     startTime, atual = 0, 0
     x = SIZE_FRAME_X
     y = SIZE_FRAME_Y
-    periodo_amostragem = 2
+    periodo_amostragem = 1
     elem_key = ['-IMAGE1-', '-IMAGE2-', '-IMAGE3-', '-IMAGE4-']
     dir_img = os.getcwd() + '\img'
     # imagens = getDatabase(dir_img)
@@ -250,6 +268,7 @@ def main_window():
     while True:
         # verificaStatusThread(identify)  # Código de logging
         event, values = main_window.read(timeout=10)
+        validacao, frame = webcam.read(0)
 
         if event == sg.WIN_CLOSED:
             break
@@ -262,7 +281,7 @@ def main_window():
             config.update(disabled=True)
             stop.update(disabled=False)
 
-            identify = Identificacao(target=thread_identif, database=getDatabase(folder), intervalo=periodo_amostragem)
+            # identify = Identificacao(target=thread_identif,intervalo=periodo_amostragem) # database=getDatabase(folder)
             identify.start()
             startTime = time.time()
 
@@ -328,3 +347,8 @@ if __name__ == "__main__":
     print(getDatabase(folder))
     # setup_window()
     main_window()
+
+
+
+
+

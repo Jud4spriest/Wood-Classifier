@@ -13,7 +13,7 @@ import tratament_preliminar
 ler = True
 
 
-dados = openpyxl.load_workbook("dados.xlsx")
+dados = openpyxl.load_workbook("dados.xlsx") # parte de salvamento de dados
 plan1 = dados['Plan1']
 
 webcam = cv.VideoCapture(0)
@@ -23,7 +23,6 @@ if webcam.isOpened():
     validacao,frame = webcam.read()
 
 while validacao: # aqui ocorre toda execução do programa principal
-    if ler:
 
         # aqui precisamos fazer a métrica de loop para capturar um frame a cada X segundos
 
@@ -31,12 +30,14 @@ while validacao: # aqui ocorre toda execução do programa principal
 
         [numero_de_nos, tipo_norma, colorida_bounding_box, pb, g_scatter, g_hist] = intermed.intermediario(frame, 0, 0,len(frame),len(frame[1]))
 
+
+        cv.imshow('web', g_hist)
+        cv.waitKey(3)
+
         # now = dt.datetime.now()# atualiza o momento atual
         # plan1.append([now.strftime("%d/%m/%Y %H:%M:%S"),nnos,tipo])
         # dados.save('book1.xlsx') #salva no excel
 
 
 
-        cv.imshow('frame',colorida_bounding_box)
-        cv.waitKey(0)
 
