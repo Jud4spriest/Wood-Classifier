@@ -15,19 +15,19 @@ def classifica(fframe,color):
     altura, largura = fframe.shape
     nnos = output[0]-1
 
-    print(stats)
-    print('largura do maior nó = ' + str(maior.maiorlargura(stats)) + ' ||| altura do maior nó + ' + str(maior.maioraltura(stats)))
-    print('Número de nós : ' + str(nnos))
+    # print(stats)
+    # print('largura do maior nó = ' + str(maior.maiorlargura(stats)) + ' ||| altura do maior nó + ' + str(maior.maioraltura(stats)))
+    # print('Número de nós : ' + str(nnos))
 
     if output[0] ==1:
-        print('Capa tipo A')
+        # print('Capa tipo A')
         tipo = 'A'
 
     elif 1 < output[0] < 12 and maior.maiorlargura(stats)< 250 and maior.maioraltura(stats)<200:
-        print('Capa tipo B')
+        # print('Capa tipo B')
         tipo = 'B'
     else:
-        print('Capa tipo C')
+        # print('Capa tipo C')
         tipo = 'C'
 
 

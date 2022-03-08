@@ -19,39 +19,40 @@ sg.theme('DarkTanBlue')
 font = ("Arial, 11")
 SIZE_FRAME_X = 600      #Colocar configuração pra ajustar tamanho?
 SIZE_FRAME_Y = 200
-folder = ''             #Adicionar folder automaticamente ao iniciar programa
+folder = os.getcwd()+'/database/'
+# dir_db = folder + '/database'
 
-# Caminho dos arquivos de leitura (o ideal mesmo era que o programa garantisse encontrar estes arquivos automaticamente)
 scatter = 'scatter.png'
 hist = 'hist.png'
 color = 'color.png'
 pb = 'pb.png'
 
-list = ['b.png','c.png']            # TESTE - Lista de arquivos
-
 """-------------------- Classes ----------------------------- """
 
 class Identificacao(Thread):
-    def __init__(self, target, intervalo, name='Thread_identificacao'):
+    def __init__(self, target, intervalo, database=[], name='Thread_identificacao'):
         super().__init__()
         self.name = name
         self._target = target
         self._finished = Event()
         self.daemon = True
         """Custom Atributos"""
-        self._nos = 0
-        self._classe = ''
-        # self.results = []
+        self._database = database
         self._intervalo = intervalo
+        self.results = []
         self._count = 0
         print(self.name, 'criada')
 
-    def run(self):
+    def run(self):                   #Teoricamente eu garanto que há dados para identificar. (tratar excessão)
         print(self.name, 'iniciada')
         while not self._finished.is_set():
-            self._nos, self._classe,_,_,_,_ = self._target(list[self._count])   #TESTE - Adpatado para rodar em teste    #Teoricamente eu garanto que há dados para identificar.
-            # self._nos, self._classe, _, _, _, _ = self._target()              # DESCOMENTAR P/ APLICAÇÃO EM TEMPO REAL
-            # self.results = self._target(list[self._count])
+            st = time.time()
+            if len(self._database) != 0:
+                self.results = self._target(folder+self._database[self._count])   # Função que roda com database
+            else:
+                # self.results = self._target()                                   # DESCOMENTAR P/ IMPLEMENTAR APLICAÇÃO EM TEMPO REAL
+                pass
+            print("Elapsed Time função identificação: "+str(cronometro(st,4)))    # Código de logging
             self._count += 1
             time.sleep(self._intervalo)
         print(self.name, 'destruida')
@@ -65,9 +66,24 @@ class Identificacao(Thread):
 
     def retornaDados(self):
         # return self.results
-        return self._nos, self._classe
+        nos, classe, _, _, _, _ = self.results
+        return nos, classe
 
 """ ------------------- Funções -------------------- """
+def getDatabase(folder):
+    try:
+        file_list = os.listdir(folder)
+    except :
+        file_list = []
+
+    fnames = [
+        f
+        for f in file_list
+        if os.path.isfile(os.path.join(folder, f))
+           and f.lower().endswith(".png")
+    ]
+    return fnames
+
 def thread_identif(img):
     return teste_integracao_interface.testeIntegracao(img)          # (TESTE)
     # return main_function_identification                           # COLOCAR AQUI A FUNÇÂO DE IDENTIFICAÇÂO EM TEMPO REAL
@@ -94,8 +110,8 @@ def createColumn(elements,x,y):
 #     image.save(bio, format="PNG")
 #     return bio.getvalue()
 
-def cronometro(startTime):
-    return time.time() - startTime
+def cronometro(startTime, trunc=3):
+    return round(time.time() - startTime, trunc)
 
 # def draw_figure(canvas, figure, loc=(0, 0)):
 #     figure_canvas_agg = FigureCanvasTkAgg(figure, canvas)
@@ -117,45 +133,49 @@ def redimensionar(filename,size):
 
 """ ------------------- Janelas do programa ------------------ """
 
-def setup_window():         # Problema: Tentar configurar enquanto thread identificação estiver rodando. (Bloquear botão)
+def setup_window():
     global folder
-    firstime = False
+    win_size = (500,200)
+    font = "Any 11 bold"
+    coluna_layout = sg.Column([
+        [sg.Text("Escolha um diretório para leitura do banco de dados:",font=font)],
+        [sg.Text("Diretório:"),sg.In(size=(40,1), default_text=folder, enable_events=True, key="-FOLDER-"), sg.FolderBrowse()],
+        [sg.Text('Selecione o intervalo de amostragem (seg):',font=font)],
+        [sg.Slider(range=(1, 10), size=(30, 8), default_value=2, orientation='h', key='-SLIDER-')],
+        [sg.Button('Ok',s=(10,1),pad=(0,10))]],
+    # background_color='red',
+    # size=win_size,
+    element_justification='center')
 
-    coluna_layout = [
-        [sg.Text("Escolha um diretório para leitura das imagens:")],
-        [sg.Text("Diretório:"),sg.In(size=(25, 1), enable_events=True, key="-FOLDER-"), sg.FolderBrowse()],
-        [sg.Button('Ok',s=(5,1),disabled=True)]
-        ]
-
-    layout = [[sg.Column(coluna_layout, element_justification='center')]]
-    setup_window = sg.Window('Classificador de Madeira', layout, keep_on_top=True, finalize=True, grab_anywhere=True)
+    layout = [[coluna_layout]]
+    setup_window = sg.Window('Classificador de Madeira', layout,element_justification='center', size=win_size, keep_on_top=True, finalize=True, grab_anywhere=True)
 
     while True:
         event, values = setup_window.read()
         if event == sg.WIN_CLOSED:
             break
         elif event == "-FOLDER-":
-            if folder == '': firstime = True
-            else: firstime = False
             folder = values["-FOLDER-"]
-            if os.path.isdir(folder):
-                setup_window['Ok'].update(disabled=False)
         elif event == "Ok":
-            if firstime:
-                setup_window.close()
-                main_window()
-            break
+            intervalo = int(values['-SLIDER-'])
+            print(getDatabase(folder))
+            setup_window.close()
+            return intervalo
     setup_window.close()
 
 def main_window():
 
     # ----- variaveis -----
+
     a, b, c = 0, 0, 0
     startTime, atual = 0, 0
     x = SIZE_FRAME_X
     y = SIZE_FRAME_Y
-    periodo_amostragem = 3          # Aprimorar - adicionar configuração de setup intevalo amostragem interface
+    periodo_amostragem = 2
     elem_key = ['-IMAGE1-', '-IMAGE2-', '-IMAGE3-', '-IMAGE4-']
+    dir_img = os.getcwd() + '\img'
+    # imagens = getDatabase(dir_img)
+    # print(imagens)
     imagens = {elem_key[0]: pb,
                elem_key[1]: scatter,
                elem_key[2]: color,
@@ -163,10 +183,7 @@ def main_window():
     identify = Thread()
 
     # ----- frames -----
-    col1 = createColumn([[sg.Text('Capa Atual',
-                                  expand_x=True,
-                                  background_color='#005e80',
-                                  justification='c')],
+    col1 = createColumn([[sg.Text('Capa Atual', expand_x=True, background_color='#005e80', justification='c')],
                          [sg.Column([[sg.Column([[sg.Text("Número de Nós: 0",
                                                           k='-NOS-')]]),
                                       sg.Column([[sg.Text("Classe: Nenhum",
@@ -225,30 +242,33 @@ def main_window():
     # Alias
     start = main_window['Iniciar']
     stop = main_window['Parar']
+    config = main_window['Configurações']
     crono = main_window['-TIME-']
-    widnos = main_window['-NOS-']
-    widclass = main_window['-CLASSE-']
+
 
     # ----- event loop -----
     while True:
-        # verificaStatusThread(identify)
+        # verificaStatusThread(identify)  # Código de logging
         event, values = main_window.read(timeout=10)
 
         if event == sg.WIN_CLOSED:
             break
 
         elif event == "Configurações":
-            setup_window()
+            periodo_amostragem = setup_window()
 
         elif event == "Iniciar":                                     # Start identificação
             start.update(disabled=True)
+            config.update(disabled=True)
             stop.update(disabled=False)
-            identify = Identificacao(target=thread_identif, intervalo=periodo_amostragem)
+
+            identify = Identificacao(target=thread_identif, database=getDatabase(folder), intervalo=periodo_amostragem)
             identify.start()
             startTime = time.time()
 
         elif event == "Parar":                                       # Stop identificação
             start.update(disabled=False)
+            config.update(disabled=False)
             stop.update(disabled=True)
             identify.shutdown()
             startTime = 0
@@ -256,14 +276,23 @@ def main_window():
 
         if startTime != 0:                                           # Identificacao
             t = cronometro(startTime)
-            crono.update('Tempo de execução: ' + str(round(t, 2)) + ' seg')     # Aprimorar exibição para hh:mm:ss:ms
+            crono.update('Tempo de execução: ' + str(t) + ' seg')     # Aprimorar exibição para hh:mm:ss:ms
 
             anterior = atual
             atual = identify.contagemDados()
+
             if anterior != atual:
+
+                # Código de logging
+                print('Amostra '+str(atual)+' - '+str(cronometro(startTime,4)))
+                print('Delay acumulado: '+str(cronometro(startTime,4) - anterior*periodo_amostragem))
+                print('Delay médio: ' + str((cronometro(startTime,4) - anterior * periodo_amostragem)/atual))
+                st = time.time()
+                # Código de logging
+
                 nnos, classe = identify.retornaDados()
-                widnos.update('Número de Nós: ' + str(nnos))
-                widclass.update("Classe: " + classe)
+                main_window['-NOS-'].update('Número de Nós: ' + str(nnos))
+                main_window['-CLASSE-'].update("Classe: " + classe)
 
                 if classe == "A":
                     a += 1
@@ -277,23 +306,25 @@ def main_window():
                 else:
                     pass  # Raise error#
 
-                main_window['-TOTAL-'].update("Total de Capas: " + str(atual))      #Possivel bug aki (Calcular total)
+                main_window['-TOTAL-'].update("Total de Capas: " + str(a+b+c))
 
                 for i in elem_key:
+                # for i in range(4):
                     if i == '-IMAGE2-': size = (x, y*2)
                     else: size = (x, y)
                     try:
-                        filename = os.path.join(folder, imagens[i])
+                        filename = os.path.join(dir_img, imagens[i])
                         image = redimensionar(filename, size)
                         main_window[i].update(data=image)
                     except:
                         pass
-                main_window.refresh()       #Talvez nao seja necessário.
+                print('Elapsed Time loop de exibição: '+str(cronometro(st,4))) # Código de logging
 
     main_window.close()
 
 
 """ ------------------ void main ------------------- """
 if __name__ == "__main__":
+    print(getDatabase(folder))
     # setup_window()
     main_window()
