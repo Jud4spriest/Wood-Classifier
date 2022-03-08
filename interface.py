@@ -268,7 +268,6 @@ def main_window():
     while True:
         # verificaStatusThread(identify)  # Código de logging
         event, values = main_window.read(timeout=10)
-        validacao, frame = webcam.read(0)
 
         if event == sg.WIN_CLOSED:
             break
@@ -281,7 +280,7 @@ def main_window():
             config.update(disabled=True)
             stop.update(disabled=False)
 
-            # identify = Identificacao(target=thread_identif,intervalo=periodo_amostragem) # database=getDatabase(folder)
+            identify = Identificacao(target=thread_identif,intervalo=periodo_amostragem) # database=getDatabase(folder)
             identify.start()
             startTime = time.time()
 

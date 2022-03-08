@@ -3,5 +3,5 @@ import intermed
 
 def testeIntegracao(capa):
     # capa = cv.imread(img)
-    return intermed.intermediario(capa,0,0,len(capa),len(capa[1]))
+    return intermed.intermediario(capa,0,0,50,50)
 
