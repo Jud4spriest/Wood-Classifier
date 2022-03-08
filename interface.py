@@ -5,7 +5,7 @@ Created on Sun Feb 27 14:35:34 2022
 """
 
 
-"""------------------- Setup -------------------- """
+"""------------------- Setup --------------------------------- """
 import os
 import time
 import PySimpleGUI as sg
@@ -29,7 +29,7 @@ pb = 'pb.png'
 
 list = ['b.png','c.png']            # TESTE - Lista de arquivos
 
-"""-------------------- Classes ------------------- """
+"""-------------------- Classes ----------------------------- """
 
 class Identificacao(Thread):
     def __init__(self, target, intervalo, name='Thread_identificacao'):
