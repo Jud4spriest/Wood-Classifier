@@ -39,7 +39,7 @@ def classifica(fframe,color):
     plt.ylabel('Largura do nó')
     plt.title('Dispersão da dimensão dos nós')
     plt.savefig('scatter.png')
-    scatter = cv.imread('scatter.png')        # Retirar (não há necessidade)
+    scatter = cv.imread('scatter.png')
     plt.close()
 
 
@@ -48,7 +48,7 @@ def classifica(fframe,color):
     plt.ylabel('Frequência')
     plt.title('Dispersão da dimensão dos nós')
     plt.savefig('hist.png')
-    hist = cv.imread('hist.png')              # Retirar (não há necessidade)
+    hist = cv.imread('hist.png')
 
 
 
@@ -58,10 +58,8 @@ def classifica(fframe,color):
 
 
     """Retorno Antigo"""
-    return nnos,tipo,color,scatter,hist           #Substituir, não precisando retornar as imagens. (talvez retornar o diretório delas)
+    return nnos,tipo,color,scatter,hist
 
-    """Retorno Novo"""
-    # return nnos,tipo
 
 
 
