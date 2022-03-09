@@ -1,7 +1,6 @@
 import cv2 as cv
 
-def tratamento_preliminar(fframe,x,y,w,h):
-    fframe = fframe[x:x + w, y:y + h]
+def tratamento_preliminar(fframe):
     fframe = cv.cvtColor(fframe, cv.COLOR_BGR2GRAY)
     tresh,binaria = cv.threshold(fframe, 175, 255, cv.THRESH_BINARY)
     binaria = ~binaria

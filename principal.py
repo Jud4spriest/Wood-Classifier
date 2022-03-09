@@ -1,20 +1,20 @@
 import cv2 as cv
 import openpyxl
-import datetime as dt
-
-# import numpy as np
-# import time
-# import keyboard
-
-import classificacao_script
 import intermed
-import tratament_preliminar
-
-ler = True
 
 
-dados = openpyxl.load_workbook("dados.xlsx") # parte de salvamento de dados
-plan1 = dados['Plan1']
+
+limiar_area = 10000
+
+
+# regioes de corte
+x = 350
+y = 0
+w = 150
+h = 625
+
+
+
 
 webcam = cv.VideoCapture(0)
 tempo_entre_frames = 3
@@ -23,21 +23,28 @@ if webcam.isOpened():
     validacao,frame = webcam.read()
 
 while validacao: # aqui ocorre toda execução do programa principal
-
-        # aqui precisamos fazer a métrica de loop para capturar um frame a cada X segundos
-
         validacao,frame = webcam.read() # imagens da webcam são colocadas na variável frame, a cada instante, gerando o vídeo
+        frame = frame[x:x + w, y:y + h]
+        [numero_de_nos, tipo_norma, colorida_bounding_box, pb, g_scatter, g_hist,area_maior_no] = intermed.intermediario(frame)
+        # if area_maior_no > limiar_area:
+        #         cv.imshow('Identificacao', colorida_bounding_box)
+        #         cv.waitKey(1)
+        #         cv.imshow('pb', pb)
+        #         cv.waitKey(1)
+        #         cv.imshow('Dispersao', g_scatter)
+        #         cv.waitKey(1)
+        #         cv.imshow('Histograma', g_hist)
+        #         cv.waitKey(1)
 
-        [numero_de_nos, tipo_norma, colorida_bounding_box, pb, g_scatter, g_hist] = intermed.intermediario(frame, 0, 0,len(frame),len(frame[1]))
+        cv.imshow('Identificacao',colorida_bounding_box)
+        cv.waitKey(1)
+        cv.imshow('pb',pb)
+        cv.waitKey(1)
+        # cv.imshow('Dispersao',g_scatter)
+        # cv.waitKey(1)
+        # cv.imshow('Histograma',g_hist)
 
-
-        cv.imshow('web', g_hist)
-        cv.waitKey(3)
-
-        # now = dt.datetime.now()# atualiza o momento atual
-        # plan1.append([now.strftime("%d/%m/%Y %H:%M:%S"),nnos,tipo])
-        # dados.save('book1.xlsx') #salva no excel
-
+        cv.waitKey(1)
 
 
 
