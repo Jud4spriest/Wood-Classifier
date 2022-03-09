@@ -16,12 +16,12 @@ import cv2 as cv
 
 sg.theme('DarkTanBlue')
 
-""" ------------------- Variaveis Globais -------------------- """
+""" --------------- Variaveis Globais --------------- """
 font = ("Arial, 11")
 SIZE_FRAME_X = 600      #Colocar configuração pra ajustar tamanho?
 SIZE_FRAME_Y = 200
 folder = os.getcwd()+'/database/'
-webcam = 0
+web = 0
 # dir_db = folder + '/database'
 
 scatter = 'scatter.png'
@@ -31,7 +31,7 @@ pb = 'pb.png'
 
 #webcam_image = None
 
-"""-------------------- Classes ----------------------------- """
+"""-------------------- Classes -------------------- """
 
 class Identificacao(Thread):
     def __init__(self, target, intervalo, database=[], name='Thread_identificacao'):
@@ -74,10 +74,14 @@ class Identificacao(Thread):
         return nos, classe
 
 """ ------------------- Funções -------------------- """
+
+def setWebcam(cam):
+    return webcam.setWebcam(cam)
+
 def getImagemWebcam(cam):
     st = time.time()
     img_cam = webcam.chamaWebcam(cam)
-    print('Elapsed Time intermed: ' + str(round(time() - st, 4)))
+    print('Elapsed Time intermed: ' + str(round(time.time() - st, 4)))
     return img_cam
 
 def printImageWebcam(frame, waitkey=3):
@@ -144,7 +148,7 @@ def redimensionar(filename,size):
     im = im.resize(size, resample=Image.BICUBIC)
     return ImageTk.PhotoImage(image=im)
 
-""" ------------------- Janelas do programa ------------------ """
+""" ------------- Janelas do programa -------------- """
 
 def setup_window(intervalo,mode):
     global folder
@@ -230,7 +234,7 @@ def info_window():
 def main_window():
 
     # ----- variaveis -----
-
+    global web
     modo_operacao = 0           # 0 - Database, 1 - Tempo Real
     a, b, c = 0, 0, 0
     startTime, atual = 0, 0
@@ -314,7 +318,7 @@ def main_window():
         # verificaStatusThread(identify)  # Código de logging
         event, values = main_window.read(timeout=10)
 
-        # printImageWebcam(getImagemWebcam(webcam))           # Função Teste Print WebCam
+
         # Se funcionar: Ideia solução. Criar variavel global imagem_webcam e ficar atualizando
 
         if event == sg.WIN_CLOSED:
@@ -400,9 +404,12 @@ def main_window():
 
 """ ------------------ void main ------------------- """
 if __name__ == "__main__":
-    print(getDatabase(folder))
+    cam = setWebcam(0)
+    while True:
+        printImageWebcam(getImagemWebcam(cam))  # Função Teste Print WebCam
+    # print(getDatabase(folder))
     # setup_window()
-    main_window()
+    # main_window()
 
 
 
