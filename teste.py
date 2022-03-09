@@ -1,6 +1,5 @@
 import cv2 as cv
-import intermed
-
+import faz_tudo
 import os
 
 f1 = cv.imread('fundo1.png')
@@ -63,30 +62,37 @@ mylist = os.listdir('rolls3/')
 print(mylist)
 
 for nome_arquivo in mylist:
+
     img = cv.imread('rolls3/'+ nome_arquivo)
-    img2 = img[x:x + w, y:y + h]
+    # img2 = img[x:x + w, y:y + h]
+    # try :
+    #     [numero_de_nos,tipo_norma,colorida_bounding_box,pb,g_scatter,g_hist,area_maior_no] = intermed.intermediario(img2)
+    #     cv.imshow('pista', colorida_bounding_box)
+    #     cv.waitKey(1)
+    #
+    # except:
+    #     numero_de_nos = 0
+    #     tipo_norma = 'A'
+    #     area_maior_no = 0
+    #
+    #     cv.imshow('pista', img2)
+    #     cv.waitKey(1)
+    #
+    #
+    #
+    # if(area_maior_no<1000):
+    #     #print("capa do tipo "+ tipo_norma + " com um total de " + str(numero_de_nos)+" nós")
+    #     print("tem chapa do tipo " + tipo_norma + ", tamanho do maior nó = " +  str(area_maior_no))
+    #     cv.imshow('com capa', img2)
+    #     cv.waitKey(0)
 
-    try :
-        [numero_de_nos,tipo_norma,colorida_bounding_box,pb,g_scatter,g_hist,area_maior_no] = intermed.intermediario(img2)
-        cv.imshow('pista', colorida_bounding_box)
-        cv.waitKey(1)
+    [numero_de_nos,tipo_norma,colorida_bounding_box,pb,g_scatter,g_hist,is_chapa] = faz_tudo.fazTudo(img,x,y,w,h)
+    cv.imshow('pista',colorida_bounding_box)
+    cv.waitKey(1)
 
-    except:
-        numero_de_nos = 0
-        tipo_norma = 'A'
-        area_maior_no = 0
-
-        cv.imshow('pista', img2)
-        cv.waitKey(1)
-
-
-
-    if(area_maior_no<1000):
-        #print("capa do tipo "+ tipo_norma + " com um total de " + str(numero_de_nos)+" nós")
-        print("tem chapa do tipo " + tipo_norma + ", tamanho do maior nó = " +  str(area_maior_no))
-        cv.imshow('com capa', img2)
-        cv.waitKey(0)
-
-
-
-cv.waitKey(0)
+    if(is_chapa):
+        cv.imshow('chapa',colorida_bounding_box)
+        cv.imshow('pb',pb)
+        cv.imshow('histograma',g_hist)
+        cv.imshow('scatter',g_scatter)
+        cv.waitKey(100)

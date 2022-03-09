@@ -31,26 +31,25 @@ def classifica(fframe,color):
     # Gerando gráficos
 
 
-    # plt.scatter(stats[:,3],stats[:,2])
-    # plt.xlabel('Altura do nó')
-    # plt.ylabel('Largura do nó')
-    # plt.title('Dispersão da dimensão dos nós')
-    # plt.savefig('scatter.png')
-    # scatter = cv.imread('scatter.png')
-    # plt.close()
+    plt.scatter(stats[:,3],stats[:,2])
+    plt.xlabel('Altura do nó')
+    plt.ylabel('Largura do nó')
+    plt.title('Dispersão da dimensão dos nós')
+    plt.savefig('scatter.png')
+    scatter = cv.imread('scatter.png')
+    plt.close()
 
 
 
-    # plt.hist(stats[:,4])
-    # plt.xlabel('Área do nó')
-    # plt.ylabel('Frequência')
-    # plt.title('Dispersão da dimensão dos nós')
-    # plt.savefig('hist.png')
-    # hist = cv.imread('hist.png')
-    # plt.close()
+    plt.hist(stats[:,4])
+    plt.xlabel('Área do nó')
+    plt.ylabel('Frequência')
+    plt.title('Dispersão da dimensão dos nós')
+    plt.savefig('hist.png')
+    hist = cv.imread('hist.png')
+    plt.close()
 
-    scatter = 0
-    hist = 0
+
 
 
     for rows in stats:
