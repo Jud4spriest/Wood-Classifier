@@ -34,7 +34,7 @@ pb = 'pb.png'
 """-------------------- Classes -------------------- """
 
 class Identificacao(Thread):
-    def __init__(self, target, intervalo, database=[], name='Thread_identificacao'):
+    def __init__(self, target, intervalo, cam=None, database=[], name='Thread_identificacao'):
         super().__init__()
         self.name = name
         self._target = target
@@ -45,6 +45,7 @@ class Identificacao(Thread):
         self._intervalo = intervalo
         self.results = []
         self._count = 0
+        self.cam = cam
         print(self.name, 'criada')
 
     def run(self):                   #Teoricamente eu garanto que há dados para identificar. (tratar excessão)
@@ -54,7 +55,7 @@ class Identificacao(Thread):
             if len(self._database) != 0:
                 self.results = self._target(folder+self._database[self._count])   # Função que roda com database
             else:
-                self.results = self._target(getImagemWebcam(webcam))                    # Função tempo real
+                self.results = self._target(getImagemWebcam(self.cam))                    # Função tempo real
                 pass
             print("Elapsed Time função identificação: "+str(cronometro(st,4)))    # Código de logging
             self._count += 1
@@ -339,7 +340,7 @@ def main_window():
                 identify = Identificacao(target=identification, database=getDatabase(folder), intervalo=periodo_amostragem)
             elif modo_operacao == 1:
                 # webcam_image = getImagemWebcam(webcam)  # Get web_cam image.
-                identify = Identificacao(target=identification, intervalo=periodo_amostragem)
+                identify = Identificacao(target=identification, cam = setWebcam(web), intervalo=periodo_amostragem)
 
             identify.start()
             startTime = time.time()
@@ -404,12 +405,12 @@ def main_window():
 
 """ ------------------ void main ------------------- """
 if __name__ == "__main__":
-    cam = setWebcam(0)
-    while True:
-        printImageWebcam(getImagemWebcam(cam))  # Função Teste Print WebCam
+    # cam = setWebcam(0)
+    # while True:
+    #     printImageWebcam(getImagemWebcam(cam))  # Função Teste Print WebCam
     # print(getDatabase(folder))
     # setup_window()
-    # main_window()
+    main_window()
 
 
 
