@@ -36,19 +36,20 @@ def classifica(fframe,color):
     """OBS: deve apenas criar imagens .png (verificar o custo computacional de atualizar a cada nova capa?)"""
 
     plt.scatter(stats[:,3],stats[:,2])
-    # plt.xlabel('Altura do nó')
-    # plt.ylabel('Largura do nó')
-    # plt.title('Dispersão da dimensão dos nós')
+    plt.xlabel('Altura do nó')
+    plt.ylabel('Largura do nó')
+    plt.title('Dispersão da dimensão dos nós')
     plt.savefig('img/scatter.png')
     scatter = cv.imread('scatter.png')
     plt.close()
 
     plt.hist(stats[:,4])
-    # plt.xlabel('Área do nó')
-    # plt.ylabel('Frequência')
-    # plt.title('Dispersão da dimensão dos nós')
+    plt.xlabel('Área do nó')
+    plt.ylabel('Frequência')
+    plt.title('Dispersão da dimensão dos nós')
     plt.savefig('img/hist.png')
     hist = cv.imread('hist.png')
+    plt.close()
 
     for rows in stats:
         color = cv.rectangle(color, (rows[0], rows[1]), (rows[0] + rows[2], rows[1] + rows[3]), (255, 0, 0), 2)

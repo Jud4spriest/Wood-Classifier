@@ -18,23 +18,17 @@ sg.theme('DarkTanBlue')
 
 """ --------------- Variaveis Globais --------------- """
 font = ("Arial, 11")
-SIZE_FRAME_X = 600      #Colocar configuração pra ajustar tamanho?
-SIZE_FRAME_Y = 200
+size = (600, 200)
 folder = os.getcwd()+'/database/'
-web = 0
-# dir_db = folder + '/database'
-
-scatter = 'scatter.png'
-hist = 'hist.png'
-color = 'color.png'
-pb = 'pb.png'
-
-#webcam_image = None
+webcam_type = 0
+modo_operacao = 0
+periodo_amostragem = 0.5
+imagens_file = ['scatter.png','hist.png','color.png','pb.png']
 
 """-------------------- Classes -------------------- """
 
 class Identificacao(Thread):
-    def __init__(self, target, intervalo, cam=None, database=[], name='Thread_identificacao'):
+    def __init__(self, target, cam=None, database=[], name='Thread_identificacao'):
         super().__init__()
         self.name = name
         self._target = target
@@ -42,32 +36,47 @@ class Identificacao(Thread):
         self.daemon = True
         """Custom Atributos"""
         self._database = database
-        self._intervalo = intervalo
         self.results = []
         self._count = 0
-        self.cam = cam
-        print(self.name, 'criada')
+        self._cam = cam
+        self._error = False
+        self._interval = 0
+        # print(self.name, 'criada')
 
     def run(self):                   #Teoricamente eu garanto que há dados para identificar. (tratar excessão)
         print(self.name, 'iniciada')
         while not self._finished.is_set():
             st = time.time()
-            if len(self._database) != 0:
-                self.results = self._target(folder+self._database[self._count])   # Função que roda com database
-            else:
-                self.results = self._target(getImagemWebcam(self.cam))                    # Função tempo real
-                pass
-            print("Elapsed Time função identificação: "+str(cronometro(st,4)))    # Código de logging
-            self._count += 1
-            time.sleep(self._intervalo)
+            try:
+                if len(self._database) != 0:
+                    self.results = self._target(folder+self._database[self._count])   # Função que roda com database
+                else:
+                    self.results = self._target(getImagemWebcam(self._cam))                    # Função tempo real
+                self._interval = cronometro(st,4)
+                self._count += 1
+                t = periodo_amostragem - cronometro(st)
+                if t < 0:
+                    t = 0
+                time.sleep(t)
+            except Exception as e:
+                self._error = True
+                time.sleep(2)
+                raise e
         print(self.name, 'destruida')
 
     def shutdown(self):
         self._finished.set()
         print(self.name, 'Desativada')
+        self.join()
 
     def contagemDados(self):
         return self._count
+
+    def elapsedTime(self):
+        return self._interval
+
+    def isError(self):
+        return self._error
 
     def retornaDados(self):
         nos, classe, _, _, _, _ = self.results
@@ -85,9 +94,9 @@ def getImagemWebcam(cam):
     print('Elapsed Time intermed: ' + str(round(time.time() - st, 4)))
     return img_cam
 
-def printImageWebcam(frame, waitkey=3):
-    cv.imshow('teste',frame)
-    cv.waitKey(waitkey)
+# def printImageWebcam(frame, waitkey=1):
+#     cv.imshow('teste',frame)
+#     cv.waitKey(waitkey)
 
 def identification(img):
 
@@ -108,8 +117,10 @@ def getDatabase(folder):
     return fnames
 
 def verificaStatusThread(t):
-    if t.is_alive():
-        print('status thread:', t.is_alive())
+    print('status thread:', t.is_alive())
+    print('error:', t.isErrorThread())
+    # if status: print('status thread:', status)
+    # return status
 
 def createColumn(elements,x,y):
     col = sg.Column([[sg.Frame('',
@@ -151,8 +162,8 @@ def redimensionar(filename,size):
 
 """ ------------- Janelas do programa -------------- """
 
-def setup_window(intervalo,mode):
-    global folder
+def setup_window():
+    global folder, periodo_amostragem, webcam_type, modo_operacao
     win_size = (500,400)
     p = (0,10)
     font = "Any 11 bold"
@@ -168,7 +179,7 @@ def setup_window(intervalo,mode):
          sg.Radio('Externo-1', "RadioDemo2", default=False, size=(10, 1), k='-C2-'),
          sg.Radio('Externo-2', "RadioDemo2", default=False, size=(10, 1), k='-C3-')],
         [sg.Text('Selecione o intervalo de amostragem (ms):',font=font, p=p)],
-        [sg.Slider(range=(100, 5000), size=(30, 8), default_value=intervalo*1000, orientation='h', key='-SLIDER-')],
+        [sg.Slider(resolution=100,range=(100, 2000), size=(30, 8), default_value=periodo_amostragem*1000, orientation='h', key='-SLIDER-')],
 
 
         [sg.Button('Ok',s=(10,1),pad=(0,10))]],
@@ -191,29 +202,27 @@ def setup_window(intervalo,mode):
         elif event == "-R1-":
             window['-FOLDER-'].update(disabled=False)
             window['-BROWSE-'].update(disabled=False)
-            mode = 0
+            modo_operacao = 0
             # print(mode, values['-R1-'], values['-R2-'])
 
         elif event == "-R2-":
             window['-FOLDER-'].update(disabled=True)
             window['-BROWSE-'].update(disabled=True)
-            mode = 1
+            modo_operacao = 1
             # print(mode, values['-R1-'], values['-R2-'])
 
         elif event == "Ok":
             if values['-C1-']:
-                webcam = 0
+                webcam_type = 0
             elif values['-C2-']:
-                webcam = 1
+                webcam_type = 1
             else:
-                webcam = 2
-            intervalo = float(values['-SLIDER-'])/1000
-            print(mode, values['-R1-'], values['-R2-'], webcam)
-            print(getDatabase(folder))
-            window.close()
-            return intervalo, mode, webcam
+                webcam_type = 2
+            periodo_amostragem = float(values['-SLIDER-'])/1000
+            # print(modo_operacao,folder, webcam_type, periodo_amostragem)
+            break
+
     window.close()
-    return intervalo, mode
 
 def info_window():
     win_size = (600,200)
@@ -232,27 +241,38 @@ def info_window():
             break
     window.close()
 
+def error_window():
+
+    font = "Any 11 bold"
+
+    col1 = sg.Column([
+        [sg.Text('Aconteceu um erro que interrompeu a Thread de identificação', background_color='red',p=(0,20), font='Any 13 bold')]])
+    col2 = sg.Column([[sg.Button('Fechar')]],expand_x=True,element_justification='center',p=(0,10))
+
+    layout = [[col1],[col2]]
+    window = sg.Window('Classificador de Madeira', layout,element_justification='center', keep_on_top=True, finalize=True, grab_anywhere=True)
+    while True:
+        event, values = window.read()
+        if event == 'Fechar' or event == sg.WIN_CLOSED:
+            break
+    window.close()
+
 def main_window():
 
     # ----- variaveis -----
-    global web
-    modo_operacao = 0           # 0 - Database, 1 - Tempo Real
+    global size, webcam_type, modo_operacao, periodo_amostragem
     a, b, c = 0, 0, 0
     startTime, atual = 0, 0
-    x = SIZE_FRAME_X
-    y = SIZE_FRAME_Y
-    periodo_amostragem = 0.5
+    x, y = size
     elem_key = ['-IMAGE1-', '-IMAGE2-', '-IMAGE3-', '-IMAGE4-']
     dir_img = os.getcwd() + '\img'
-    # imagens = getDatabase(dir_img)
-    # print(imagens)
-    imagens = {elem_key[0]: pb,
-               elem_key[1]: scatter,
-               elem_key[2]: color,
-               elem_key[3]: hist}
-    identify = Thread()
+    imagens = {}
+    for i in range(len(elem_key)):
+        imagens.update({elem_key[i]: imagens_file[i]})
+    identify = Identificacao(None,None)
 
     # ----- frames -----
+
     col1 = createColumn([[sg.Text('Capa Atual', expand_x=True, background_color='#005e80', justification='c')],
                          [sg.Column([[sg.Column([[sg.Text("Número de Nós: 0",
                                                           k='-NOS-')]]),
@@ -319,9 +339,6 @@ def main_window():
         # verificaStatusThread(identify)  # Código de logging
         event, values = main_window.read(timeout=10)
 
-
-        # Se funcionar: Ideia solução. Criar variavel global imagem_webcam e ficar atualizando
-
         if event == sg.WIN_CLOSED:
             break
 
@@ -329,7 +346,7 @@ def main_window():
             info_window()
 
         elif event == "Configurações":
-            periodo_amostragem, modo_operacao, webcam = setup_window(periodo_amostragem, modo_operacao)
+            setup_window()
 
         elif event == "Iniciar":                                     # Start identificação
             start.update(disabled=True)
@@ -337,15 +354,13 @@ def main_window():
             about.update(disabled=True)
             stop.update(disabled=False)
             if modo_operacao == 0:
-                identify = Identificacao(target=identification, database=getDatabase(folder), intervalo=periodo_amostragem)
+                identify = Identificacao(target=identification, database=getDatabase(folder))
             elif modo_operacao == 1:
-                # webcam_image = getImagemWebcam(webcam)  # Get web_cam image.
-                identify = Identificacao(target=identification, cam = setWebcam(web), intervalo=periodo_amostragem)
-
+                identify = Identificacao(target=identification, cam=setWebcam(webcam_type))
             identify.start()
             startTime = time.time()
 
-        elif event == "Parar":                                       # Stop identificação
+        elif event == "Parar" or (identify.isError()):                                       # Stop identificação
             start.update(disabled=False)
             config.update(disabled=False)
             about.update(disabled=False)
@@ -353,28 +368,22 @@ def main_window():
             identify.shutdown()
             startTime = 0
             atual = 0
+            if identify.isError():
+                identify = Identificacao(None, None)
+                error_window()
 
         if startTime != 0:                                           # Identificacao
-            t = cronometro(startTime)
-            crono.update(str(t) + ' seg')     # Aprimorar exibição para hh:mm:ss:ms
+            crono.update(str(cronometro(startTime)) + ' seg')  # Aprimorar exibição para hh:mm:ss:ms
 
             anterior = atual
             atual = identify.contagemDados()
 
             if anterior != atual:
-                # webcam_image = getImagemWebcam(webcam) # Get web_cam image.
-
-                # Código de logging
-                print('Amostra '+str(atual)+' - '+str(cronometro(startTime,4)))
-                print('Delay acumulado: '+str(cronometro(startTime,4) - anterior*periodo_amostragem))
-                print('Delay médio: ' + str((cronometro(startTime,4) - anterior * periodo_amostragem)/atual))
-                st = time.time()
-                # Código de logging
+                st = time.time()         # Código de logging
 
                 nnos, classe = identify.retornaDados()
                 main_window['-NOS-'].update('Número de Nós: ' + str(nnos))
                 main_window['-CLASSE-'].update("Classe: " + classe)
-
                 if classe == "A":
                     a += 1
                     main_window['-A-'].update("Tipo A: " + str(a))
@@ -386,7 +395,6 @@ def main_window():
                     main_window['-C-'].update("Tipo C: " + str(c))
                 else:
                     pass  # Raise error#
-
                 main_window['-TOTAL-'].update("Total de Capas: " + str(a+b+c))
 
                 for i in elem_key:
@@ -398,7 +406,14 @@ def main_window():
                         main_window[i].update(data=image)
                     except:
                         pass
-                print('Elapsed Time loop de exibição: '+str(cronometro(st,4))) # Código de logging
+
+                # Código de logging
+                print('Amostra ' + str(atual) + ' - ' + str(cronometro(startTime, 4)))
+                print('Delay acumulado: ' + str(cronometro(startTime, 4) - anterior * periodo_amostragem))
+                print('Delay médio: ' + str((cronometro(startTime, 4) - anterior * periodo_amostragem) / atual))
+                print("Elapsed Time função identificação: " + str(identify.elapsedTime()))
+                print('Elapsed Time loop de exibição: ' + str(cronometro(st, 4)))
+                # Código de logging
 
     main_window.close()
 

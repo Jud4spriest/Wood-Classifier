@@ -7,8 +7,8 @@ def integracao(img):
         capa = cv.imread(img)
     else:
         capa = img
-    st = time()
+    # st = time()
     results = intermed.intermediario(capa,0,0,len(capa),len(capa[1]))
-    print('Elapsed Time intermed: '+str(round(time()-st,4)))
+    # print('Elapsed Time intermed: '+str(round(time()-st,4)))
     return results
 
