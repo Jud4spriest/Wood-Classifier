@@ -1,5 +1,6 @@
 import cv2 as cv
 import intermed
+
 import os
 
 f1 = cv.imread('fundo1.png')
@@ -24,6 +25,7 @@ m14 = cv.imread('meio_termo/14.png')
 m15 = cv.imread('meio_termo/15.png')
 m16 = cv.imread('meio_termo/16.png')
 m17 = cv.imread('meio_termo/17.png')
+
 
 
 

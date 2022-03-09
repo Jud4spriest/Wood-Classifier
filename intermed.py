@@ -1,7 +1,7 @@
 import classificacao_script
 import tratament_preliminar
 import cv2
-
+from time import time
 
 def intermediario(imagem_a_classificar):
     dir = 'img/'
@@ -14,4 +14,5 @@ def intermediario(imagem_a_classificar):
     cv2.imwrite(dir+'pb.png',pb)
 
     return numero_de_nos, tipo_norma, colorida_bounding_box, pb, scatter, hist,area_big_no
+
 

@@ -1,6 +1,7 @@
 import cv2 as cv
 import maior
 import matplotlib.pyplot as plt
+from matplotlib import image
 from matplotlib.figure import Figure
 
 
@@ -28,6 +29,7 @@ def classifica(fframe,color):
 
 
     # Gerando gráficos
+
 
     # plt.scatter(stats[:,3],stats[:,2])
     # plt.xlabel('Altura do nó')

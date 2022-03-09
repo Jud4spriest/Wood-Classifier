@@ -4,18 +4,15 @@ Created on Sun Feb 27 14:35:34 2022
 @author: Marcos Azevedo (judaspriest)
 """
 
-
 """------------------- Setup --------------------------------- """
 import os
 import time
 import PySimpleGUI as sg
 from threading import Thread,Event
 from PIL import Image, ImageTk
-import teste_integracao_interface
-import intermed
+import api
 import webcam
 import cv2 as cv
-
 
 sg.theme('DarkTanBlue')
 
@@ -24,12 +21,15 @@ font = ("Arial, 11")
 SIZE_FRAME_X = 600      #Colocar configuração pra ajustar tamanho?
 SIZE_FRAME_Y = 200
 folder = os.getcwd()+'/database/'
+webcam = 0
 # dir_db = folder + '/database'
 
 scatter = 'scatter.png'
 hist = 'hist.png'
 color = 'color.png'
 pb = 'pb.png'
+
+#webcam_image = None
 
 """-------------------- Classes ----------------------------- """
 
@@ -54,7 +54,7 @@ class Identificacao(Thread):
             if len(self._database) != 0:
                 self.results = self._target(folder+self._database[self._count])   # Função que roda com database
             else:
-                self.results = self._target(imagem_webcam())                                   # DESCOMENTAR P/ IMPLEMENTAR APLICAÇÃO EM TEMPO REAL
+                self.results = self._target(getImagemWebcam(webcam))                    # Função tempo real
                 pass
             print("Elapsed Time função identificação: "+str(cronometro(st,4)))    # Código de logging
             self._count += 1
@@ -69,15 +69,24 @@ class Identificacao(Thread):
         return self._count
 
     def retornaDados(self):
-        # return self.results
         nos, classe, _, _, _, _ = self.results
+        # nos, classe, _, _, = self.results
         return nos, classe
 
 """ ------------------- Funções -------------------- """
-def imagem_webcam():
-    return webcam.chama_webcam(0)
+def getImagemWebcam(cam):
+    st = time.time()
+    img_cam = webcam.chamaWebcam(cam)
+    print('Elapsed Time intermed: ' + str(round(time() - st, 4)))
+    return img_cam
 
+def printImageWebcam(frame, waitkey=3):
+    cv.imshow('teste',frame)
+    cv.waitKey(waitkey)
 
+def identification(img):
+
+    return api.integracao(img)
 
 def getDatabase(folder):
     try:
@@ -92,19 +101,6 @@ def getDatabase(folder):
            and f.lower().endswith(".png")
     ]
     return fnames
-
-# def thread_identif(img):
-#     return teste_integracao_interface.testeIntegracao(img)
-#
-#     # (TESTE)
-#     # return main_function_identification                           # COLOCAR AQUI A FUNÇÂO DE IDENTIFICAÇÂO EM TEMPO REAL
-
-
-
-def thread_identif(img):
-    return teste_integracao_interface.testeIntegracao(img)
-
-
 
 def verificaStatusThread(t):
     if t.is_alive():
@@ -128,8 +124,8 @@ def createColumn(elements,x,y):
 #     image.save(bio, format="PNG")
 #     return bio.getvalue()
 
-def cronometro(startTime, trunc=3):
-    return round(time.time() - startTime, trunc)
+def cronometro(start_time, trunc=3):
+    return round(time.time() - start_time, trunc)
 
 # def draw_figure(canvas, figure, loc=(0, 0)):
 #     figure_canvas_agg = FigureCanvasTkAgg(figure, canvas)
@@ -148,48 +144,99 @@ def redimensionar(filename,size):
     im = im.resize(size, resample=Image.BICUBIC)
     return ImageTk.PhotoImage(image=im)
 
-
 """ ------------------- Janelas do programa ------------------ """
 
-def setup_window():
+def setup_window(intervalo,mode):
     global folder
-    win_size = (500,200)
+    win_size = (500,400)
+    p = (0,10)
     font = "Any 11 bold"
+
     coluna_layout = sg.Column([
-        [sg.Text("Escolha um diretório para leitura do banco de dados:",font=font)],
-        [sg.Text("Diretório:"),sg.In(size=(40,1), default_text=folder, enable_events=True, key="-FOLDER-"), sg.FolderBrowse()],
-        [sg.Text('Selecione o intervalo de amostragem (seg):',font=font)],
-        [sg.Slider(range=(1, 10), size=(30, 8), default_value=2, orientation='h', key='-SLIDER-')],
+        [sg.Text('Selecione o modo de operação: ', font=font, p=p)],
+        [sg.Radio('Database', "RadioDemo",enable_events=True, default=True, size=(10, 1), k='-R1-'),
+         sg.Radio('Tempo Real', "RadioDemo", default=False, enable_events=True, size=(10, 1), k='-R2-')],
+        [sg.Text("Escolha um diretório para leitura do banco de dados:",font=font, p=p)],
+        [sg.Text("Diretório:"),sg.In(size=(40,1), default_text=folder, enable_events=True, key="-FOLDER-", p=p), sg.FolderBrowse(k='-BROWSE-')],
+        [sg.Text('Selecione a webcam: ', font=font, p=p)],
+        [sg.Radio('Nativo', "RadioDemo2", default=True, size=(10, 1), k='-C1-'),
+         sg.Radio('Externo-1', "RadioDemo2", default=False, size=(10, 1), k='-C2-'),
+         sg.Radio('Externo-2', "RadioDemo2", default=False, size=(10, 1), k='-C3-')],
+        [sg.Text('Selecione o intervalo de amostragem (ms):',font=font, p=p)],
+        [sg.Slider(range=(100, 5000), size=(30, 8), default_value=intervalo*1000, orientation='h', key='-SLIDER-')],
+
+
         [sg.Button('Ok',s=(10,1),pad=(0,10))]],
     # background_color='red',
     # size=win_size,
     element_justification='center')
 
     layout = [[coluna_layout]]
-    setup_window = sg.Window('Classificador de Madeira', layout,element_justification='center', size=win_size, keep_on_top=True, finalize=True, grab_anywhere=True)
+    window = sg.Window('Classificador de Madeira', layout,element_justification='center', size=win_size, keep_on_top=True, finalize=True, grab_anywhere=True)
 
     while True:
-        event, values = setup_window.read()
+        event, values = window.read()
+
         if event == sg.WIN_CLOSED:
             break
+
         elif event == "-FOLDER-":
             folder = values["-FOLDER-"]
+
+        elif event == "-R1-":
+            window['-FOLDER-'].update(disabled=False)
+            window['-BROWSE-'].update(disabled=False)
+            mode = 0
+            # print(mode, values['-R1-'], values['-R2-'])
+
+        elif event == "-R2-":
+            window['-FOLDER-'].update(disabled=True)
+            window['-BROWSE-'].update(disabled=True)
+            mode = 1
+            # print(mode, values['-R1-'], values['-R2-'])
+
         elif event == "Ok":
-            intervalo = int(values['-SLIDER-'])
+            if values['-C1-']:
+                webcam = 0
+            elif values['-C2-']:
+                webcam = 1
+            else:
+                webcam = 2
+            intervalo = float(values['-SLIDER-'])/1000
+            print(mode, values['-R1-'], values['-R2-'], webcam)
             print(getDatabase(folder))
-            setup_window.close()
-            return intervalo
-    setup_window.close()
+            window.close()
+            return intervalo, mode, webcam
+    window.close()
+    return intervalo, mode
+
+def info_window():
+    win_size = (600,200)
+    font = "Any 11 bold"
+
+    col1 = sg.Column([
+        [sg.Text('About Us', background_color='#005e80', font='Any 13 bold')],
+        [sg.Text('Projeto desenvolvido por Arthur Fey & Marcos Azevedo', font=font)]],expand_y=True,element_justification='center')
+    col2 = sg.Column([[sg.Button('Fechar')]],expand_x=True,element_justification='center',p=(0,30))
+
+    layout = [[col1],[col2]]
+    window = sg.Window('Classificador de Madeira', layout,element_justification='center', size=win_size, keep_on_top=True, finalize=True, grab_anywhere=True)
+    while True:
+        event, values = window.read()
+        if event == 'Fechar' or event == sg.WIN_CLOSED:
+            break
+    window.close()
 
 def main_window():
 
     # ----- variaveis -----
 
+    modo_operacao = 0           # 0 - Database, 1 - Tempo Real
     a, b, c = 0, 0, 0
     startTime, atual = 0, 0
     x = SIZE_FRAME_X
     y = SIZE_FRAME_Y
-    periodo_amostragem = 1
+    periodo_amostragem = 0.5
     elem_key = ['-IMAGE1-', '-IMAGE2-', '-IMAGE3-', '-IMAGE4-']
     dir_img = os.getcwd() + '\img'
     # imagens = getDatabase(dir_img)
@@ -227,32 +274,29 @@ def main_window():
     col3 = createColumn([[sg.Image(key=elem_key[1])]], x, y*2)
     col4 = sg.Column([[createColumn([[sg.Image(key=elem_key[2])]], x, y)],
                       [createColumn([[sg.Image(key=elem_key[3])]], x, y)]])
-    # col4 = createColumn([[sg.Image(key="-IMAGE2-")]], x, y)
-    # col5 = createColumn([[sg.Image(key="-IMAGE3-")]], x, y)
-    # col6 = createColumn([[sg.Image(key="-IMAGE4-")]], x, y)
-    col7 = sg.Column([[sg.Button("Iniciar",
+    col5 = sg.Column([[sg.Button("Iniciar",
                                  s=(10,1),
                                  disabled=False),
                        sg.Button("Parar",
                                  s=(10,1),
                                  disabled=True)]],
+                     # background_color='purple',
+                     expand_x=True,
                      element_justification='center',
                      justification='center')
-    col8 = sg.Column([[sg.Push(),
-                       sg.Text('Tempo de execução: 0.00 seg',
-                               k='-TIME-',
-                               expand_x=True,
-                               justification='right')]])
-
+    col6 = sg.Column([[sg.Text('Tempo de execução:',
+                               justification='left'),
+                       sg.Text('0.00 seg',
+                               k='-TIME-')]])
+                     # justification='right',
+                     # background_color='green')
+    col7 = sg.Column([[sg.Button("Sobre o Projeto")]],
+                     # background_color='yellow',
+                     justification='left')
     # ----- layout -----
     layout = [[col1, col2],
               [col3, col4],
-              [col7, col8]]
-    #
-    # layout_old = [[col1, col2],
-    #           [col3, col4],
-    #           [col5, col6],
-    #           [col7]]
+              [sg.Column([[col7, col5, col6]],expand_x=True)]]
 
     # ----- window -----
     main_window = sg.Window(title="Classificador de Madeira",finalize=True, layout=layout, grab_anywhere=True)
@@ -262,6 +306,7 @@ def main_window():
     stop = main_window['Parar']
     config = main_window['Configurações']
     crono = main_window['-TIME-']
+    about = main_window["Sobre o Projeto"]
 
 
     # ----- event loop -----
@@ -269,24 +314,36 @@ def main_window():
         # verificaStatusThread(identify)  # Código de logging
         event, values = main_window.read(timeout=10)
 
+        # printImageWebcam(getImagemWebcam(webcam))           # Função Teste Print WebCam
+        # Se funcionar: Ideia solução. Criar variavel global imagem_webcam e ficar atualizando
+
         if event == sg.WIN_CLOSED:
             break
 
+        elif event == "Sobre o Projeto":
+            info_window()
+
         elif event == "Configurações":
-            periodo_amostragem = setup_window()
+            periodo_amostragem, modo_operacao, webcam = setup_window(periodo_amostragem, modo_operacao)
 
         elif event == "Iniciar":                                     # Start identificação
             start.update(disabled=True)
             config.update(disabled=True)
+            about.update(disabled=True)
             stop.update(disabled=False)
+            if modo_operacao == 0:
+                identify = Identificacao(target=identification, database=getDatabase(folder), intervalo=periodo_amostragem)
+            elif modo_operacao == 1:
+                # webcam_image = getImagemWebcam(webcam)  # Get web_cam image.
+                identify = Identificacao(target=identification, intervalo=periodo_amostragem)
 
-            identify = Identificacao(target=thread_identif,intervalo=periodo_amostragem) # database=getDatabase(folder)
             identify.start()
             startTime = time.time()
 
         elif event == "Parar":                                       # Stop identificação
             start.update(disabled=False)
             config.update(disabled=False)
+            about.update(disabled=False)
             stop.update(disabled=True)
             identify.shutdown()
             startTime = 0
@@ -294,12 +351,13 @@ def main_window():
 
         if startTime != 0:                                           # Identificacao
             t = cronometro(startTime)
-            crono.update('Tempo de execução: ' + str(t) + ' seg')     # Aprimorar exibição para hh:mm:ss:ms
+            crono.update(str(t) + ' seg')     # Aprimorar exibição para hh:mm:ss:ms
 
             anterior = atual
             atual = identify.contagemDados()
 
             if anterior != atual:
+                # webcam_image = getImagemWebcam(webcam) # Get web_cam image.
 
                 # Código de logging
                 print('Amostra '+str(atual)+' - '+str(cronometro(startTime,4)))
@@ -327,7 +385,6 @@ def main_window():
                 main_window['-TOTAL-'].update("Total de Capas: " + str(a+b+c))
 
                 for i in elem_key:
-                # for i in range(4):
                     if i == '-IMAGE2-': size = (x, y*2)
                     else: size = (x, y)
                     try:
